@@ -1,0 +1,25 @@
+# fly.toml app configuration file generated for one-gpt on 2023-09-11T06:36:51Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = "one-gpt"
+primary_region = "hkg"
+[build]
+  image = "ghcr.io/songquanpeng/one-api:latest"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[env]
+  SQLITE_PATH = "/mnt/volume/production.sqlite3"
+
+[mounts]
+  source = "sqlite3_volume"
+  destination = "/mnt/volume"
+
