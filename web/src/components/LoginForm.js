@@ -2,7 +2,8 @@ import React, { useContext, useEffect, useState } from 'react';
 import { Button, Divider, Form, Grid, Header, Image, Message, Modal, Segment } from 'semantic-ui-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { UserContext } from '../context/User';
-import { API, getLogo, showError, showSuccess } from '../helpers';
+import { API, getLogo, showError, showSuccess, showWarning } from '../helpers';
+import { onGitHubOAuthClicked } from './utils';
 
 const LoginForm = () => {
   const [inputs, setInputs] = useState({
@@ -30,12 +31,6 @@ const LoginForm = () => {
   }, []);
 
   const [showWeChatLoginModal, setShowWeChatLoginModal] = useState(false);
-
-  const onGitHubOAuthClicked = () => {
-    window.open(
-      `https://github.com/login/oauth/authorize?client_id=${status.github_client_id}&scope=user:email`
-    );
-  };
 
   const onWeChatLoginClicked = () => {
     setShowWeChatLoginModal(true);
@@ -73,8 +68,14 @@ const LoginForm = () => {
       if (success) {
         userDispatch({ type: 'login', payload: data });
         localStorage.setItem('user', JSON.stringify(data));
-        navigate('/');
-        showSuccess('登录成功！');
+        if (username === 'root' && password === '123456') {
+          navigate('/user/edit');
+          showSuccess('登录成功！');
+          showWarning('请立刻修改默认密码！');
+        } else {
+          navigate('/token');
+          showSuccess('登录成功！');
+        }
       } else {
         showError(message);
       }
@@ -131,7 +132,7 @@ const LoginForm = () => {
                 circular
                 color='black'
                 icon='github'
-                onClick={onGitHubOAuthClicked}
+                onClick={() => onGitHubOAuthClicked(status.github_client_id)}
               />
             ) : (
               <></>

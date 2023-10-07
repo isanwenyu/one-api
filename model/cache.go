@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/rand"
 	"one-api/common"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -159,6 +160,17 @@ func InitChannelCache() {
 			}
 		}
 	}
+
+	// sort by priority
+	for group, model2channels := range newGroup2model2channels {
+		for model, channels := range model2channels {
+			sort.Slice(channels, func(i, j int) bool {
+				return channels[i].GetPriority() > channels[j].GetPriority()
+			})
+			newGroup2model2channels[group][model] = channels
+		}
+	}
+
 	channelSyncLock.Lock()
 	group2model2channels = newGroup2model2channels
 	channelSyncLock.Unlock()
@@ -174,7 +186,7 @@ func SyncChannelCache(frequency int) {
 }
 
 func CacheGetRandomSatisfiedChannel(group string, model string) (*Channel, error) {
-	if !common.RedisEnabled {
+	if !common.MemoryCacheEnabled {
 		return GetRandomSatisfiedChannel(group, model)
 	}
 	channelSyncLock.RLock()
@@ -183,6 +195,17 @@ func CacheGetRandomSatisfiedChannel(group string, model string) (*Channel, error
 	if len(channels) == 0 {
 		return nil, errors.New("channel not found")
 	}
-	idx := rand.Intn(len(channels))
+	endIdx := len(channels)
+	// choose by priority
+	firstChannel := channels[0]
+	if firstChannel.GetPriority() > 0 {
+		for i := range channels {
+			if channels[i].GetPriority() != firstChannel.GetPriority() {
+				endIdx = i
+				break
+			}
+		}
+	}
+	idx := rand.Intn(endIdx)
 	return channels[idx], nil
 }
